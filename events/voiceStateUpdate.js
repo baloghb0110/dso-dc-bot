@@ -65,6 +65,5 @@ function updateVoiceChannelStats(guild) {
       });
     }
   });
-  console.log(currentUserCount + "asd");
   voiceStats.updateVoiceStats(currentUserCount);
 }
