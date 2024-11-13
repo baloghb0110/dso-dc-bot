@@ -13,7 +13,7 @@ module.exports = {
     if (!command) return;
 
     try {
-      command.execute(message, args);
+      command.execute(client, message, args);
     } catch (error) {
       console.error(error);
       message.reply('Hiba történt a parancs végrehajtása közben.');
