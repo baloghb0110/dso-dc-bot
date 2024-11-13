@@ -1,10 +1,14 @@
 // events/voiceStateUpdate.js
 const { EmbedBuilder } = require('discord.js');
 const config = require('../config.json');
+const voiceStats = require('../utils/voiceStats');
 
 module.exports = {
   name: 'voiceStateUpdate',
   async execute(client, oldState, newState) {
+    // Frissítjük a statisztikákat
+    updateVoiceChannelStats(oldState.guild);
+
     const logChannel = oldState.guild.channels.cache.get(config.voiceLogChannelId) || newState.guild.channels.cache.get(config.voiceLogChannelId);
     if (!logChannel) return;
 
@@ -46,3 +50,15 @@ module.exports = {
     logChannel.send({ embeds: [embed] });
   },
 };
+
+function updateVoiceChannelStats(guild) {
+  let currentUserCount = 0;
+
+  guild.channels.cache.forEach(channel => {
+    if (channel.isVoiceBased()) {
+      currentUserCount += channel.members.size;
+    }
+  });
+
+  voiceStats.updateVoiceStats(currentUserCount);
+}
