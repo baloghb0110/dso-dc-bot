@@ -69,6 +69,9 @@ module.exports = {
       return;
     }
 
+    const [year, month, day] = dateString.split('.').map(Number);
+    const targetDate = new Date(year, month - 1, day);
+
     // Üzenet ütemezése
     const channelId = message.channel.id; // Az aktuális csatornában küldjük az üzenetet
     scheduleMessage(channelId, targetDate, messageContent, client);
