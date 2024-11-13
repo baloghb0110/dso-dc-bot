@@ -7,7 +7,7 @@ module.exports = {
   name: 'voiceStateUpdate',
   async execute(client, oldState, newState) {
     // Frissítjük a statisztikákat
-    updateVoiceChannelStats(oldState.guild);
+    updateVoiceChannelStats(newState.guild);
 
     const logChannel = oldState.guild.channels.cache.get(config.voiceLogChannelId) || newState.guild.channels.cache.get(config.voiceLogChannelId);
     if (!logChannel) return;
@@ -49,16 +49,22 @@ module.exports = {
 
     logChannel.send({ embeds: [embed] });
   },
+  updateVoiceChannelStats,
 };
 
+// Függvény a statisztikák frissítéséhez
 function updateVoiceChannelStats(guild) {
   let currentUserCount = 0;
 
   guild.channels.cache.forEach(channel => {
     if (channel.isVoiceBased()) {
-      currentUserCount += channel.members.size;
+      channel.members.forEach(member => {
+        if (!member.user.bot) {
+          currentUserCount += 1;
+        }
+      });
     }
   });
-
+  console.log(currentUserCount + "asd");
   voiceStats.updateVoiceStats(currentUserCount);
 }

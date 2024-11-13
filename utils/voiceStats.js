@@ -16,6 +16,7 @@ function loadStats() {
 }
 
 function saveStats() {
+  console.log(statsFilePath)
   fs.writeFileSync(statsFilePath, JSON.stringify(stats, null, 2));
 }
 
