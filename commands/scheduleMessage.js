@@ -7,7 +7,7 @@ module.exports = {
   name: 'motd',
   description: 'Automatikusan ütemezett üzenetek óránkánt megadott ideig',
   usage: '!motd <dátum> <üzenet>',
-  async execute(message, args) {
+  async execute(client, message, args) {
     const memberRoles = message.member.roles.cache;
     const isAdmin = adminRoles.some(roleId => memberRoles.has(roleId));
 

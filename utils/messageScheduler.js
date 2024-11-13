@@ -1,4 +1,5 @@
 // utils/messageScheduler.js
+const { EmbedBuilder } = require('discord.js');
 const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
@@ -19,68 +20,156 @@ function saveScheduledMessages() {
 }
 
 // Üzenet ütemezése
-function scheduleMessage(channelId, targetDate, messageContent) {
+function scheduleMessage(channelId, targetDate, messageContent, client) {
   const now = new Date();
   if (targetDate <= now) return;
 
-  const job = new cron('0 * * * * *', async () => {
+  const messageData = {
+    id: Date.now().toString(), // Egyedi azonosító generálása
+    channelId,
+    messageId: null,
+    targetDate: targetDate.toISOString(),
+    messageContent,
+  };
 
-    const client = require('../bot').client;
-    const channel = client.channels.cache.get(channelId);
-    if (!channel) return;
+  scheduledMessages.push(messageData);
+  saveScheduledMessages();
 
-    const previousMessageId = scheduledMessages.find(msg => msg.channelId === channelId)?.messageId;
-    if (previousMessageId) {
-      try {
-        const previousMessage = await channel.messages.fetch(previousMessageId);
-        if (previousMessage) await previousMessage.delete();
-      } catch (error) {
-        console.error('Nem sikerült törölni az előző üzenetet:', error);
-      }
-    }
-
+  const task = cron.schedule('0 * * * * *', async () => {
     try {
-      const sentMessage = await channel.send(messageContent);
-
-      const index = scheduledMessages.findIndex(msg => msg.channelId === channelId);
-      if (index !== -1) {
-        scheduledMessages[index].messageId = sentMessage.id;
-      } else {
-        scheduledMessages.push({
-          channelId,
-          messageId: sentMessage.id,
-          targetDate: targetDate.toISOString(),
-          messageContent,
-        });
+      const channel = client.channels.cache.get(channelId);
+      if (!channel) {
+        console.log('Nem található a csatorna.');
+        return;
       }
-      saveScheduledMessages();
-    } catch (error) {
-      console.error('Nem sikerült elküldeni az üzenetet:', error);
-    }
 
-    const now = new Date();
-    if (now >= new Date(targetDate)) {
-      job.stop();
-      scheduledMessages = scheduledMessages.filter(msg => msg.channelId !== channelId);
+      // Hátralévő idő kiszámítása
+      const currentDate = new Date();
+      const timeLeft = targetDate - currentDate;
+      const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+      const seconds = Math.floor((timeLeft / 1000) % 60);
+
+      const timeLeftString = `${days} nap, ${hours} óra, ${minutes} perc, ${seconds} másodperc`;
+
+      // Előző üzenet törlése
+      if (messageData.messageId) {
+        try {
+          const previousMessage = await channel.messages.fetch(messageData.messageId);
+          if (previousMessage) await previousMessage.delete();
+        } catch (error) {
+          if (error.code === 10008) {
+            console.log('Az előző üzenet már törölve lett.');
+          } else {
+            console.error('Nem sikerült törölni az előző üzenetet:', error);
+          }
+        }
+      }
+
+      // Új embed üzenet létrehozása
+      const embed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle('📢 Automatikus klán üzenet')
+        .setDescription(messageData.messageContent)
+        .addFields({ name: '⌛Hátralévő idő a lejáratig', value: "```" + timeLeftString + "```" })
+        .setTimestamp();
+
+      // Új üzenet küldése
+      const sentMessage = await channel.send({ embeds: [embed] });
+
+      // Üzenet információinak frissítése
+      messageData.messageId = sentMessage.id;
       saveScheduledMessages();
+
+      // Ellenőrizzük, hogy elértük-e a cél dátumot
+      const now = new Date();
+      if (now >= targetDate) {
+        task.stop(); // Feladat leállítása
+        console.log('Feladat leállítva, elértük a cél dátumot.');
+
+        // Üzenet információinak eltávolítása
+        scheduledMessages = scheduledMessages.filter(msg => msg.id !== messageData.id);
+        saveScheduledMessages();
+      }
+    } catch (error) {
+      console.error('Hiba a cron feladatban:', error);
     }
   });
-
-  job.start();
 }
+
 
 function startScheduledMessages(client) {
   loadScheduledMessages();
 
-  scheduledMessages.forEach(msg => {
-    const channelId = msg.channelId;
-    const targetDate = new Date(msg.targetDate);
-    const messageContent = msg.messageContent;
+  scheduledMessages.forEach(messageData => {
+    const channelId = messageData.channelId;
+    const targetDate = new Date(messageData.targetDate);
+    const messageContent = messageData.messageContent;
 
-    scheduleMessage(channelId, targetDate, messageContent);
+    const task = cron.schedule('0 * * * * *', async () => {
+      try {
+        const channel = client.channels.cache.get(channelId);
+        if (!channel) {
+          console.log('Nem található a csatorna.');
+          return;
+        }
+
+        // Hátralévő idő kiszámítása
+        const currentDate = new Date();
+        const timeLeft = targetDate - currentDate;
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+        const seconds = Math.floor((timeLeft / 1000) % 60);
+
+        const timeLeftString = `${days} nap, ${hours} óra, ${minutes} perc, ${seconds} másodperc`;
+
+        // Előző üzenet törlése
+        if (messageData.messageId) {
+          try {
+            const previousMessage = await channel.messages.fetch(messageData.messageId);
+            if (previousMessage) await previousMessage.delete();
+          } catch (error) {
+            if (error.code === 10008) {
+              console.log('Az előző üzenet már törölve lett.');
+            } else {
+              console.error('Nem sikerült törölni az előző üzenetet:', error);
+            }
+          }
+        }
+
+        // Új embed üzenet létrehozása
+        const embed = new EmbedBuilder()
+          .setColor('#0099ff')
+          .setTitle('📢 Automatikus klán üzenet')
+          .setDescription(messageContent)
+          .addFields({ name: '⌛Hátralévő idő a lejáratig', value: "```" + timeLeftString + "```" })
+          .setTimestamp();
+
+        // Új üzenet küldése
+        const sentMessage = await channel.send({ embeds: [embed] });
+
+        // Üzenet információinak frissítése
+        messageData.messageId = sentMessage.id;
+        saveScheduledMessages();
+
+        // Ellenőrizzük, hogy elértük-e a cél dátumot
+        const now = new Date();
+        if (now >= targetDate) {
+          task.stop(); // Feladat leállítása
+          console.log('Feladat leállítva, elértük a cél dátumot.');
+
+          // Üzenet információinak eltávolítása
+          scheduledMessages = scheduledMessages.filter(msg => msg.id !== messageData.id);
+          saveScheduledMessages();
+        }
+      } catch (error) {
+        console.error('Hiba a cron feladatban:', error);
+      }
+    });
   });
 }
-
 module.exports = {
   scheduleMessage,
   startScheduledMessages,
