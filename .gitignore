@@ -1,0 +1,17 @@
+# Node.js függőségek
+node_modules/
+
+# Környezeti változók és konfigurációk
+config.json
+
+# Adatbázis fájlok
+data/*.sqlite
+
+# Log fájlok
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Egyéb ideiglenes fájlok
+.DS_Store
+.env
