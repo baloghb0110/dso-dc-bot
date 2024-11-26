@@ -16,13 +16,6 @@ module.exports = {
       return message.reply('Ehhez a parancshoz adminisztrátori jogosultság szükséges.');
     }
 
-    // Töröljük a felhasználó parancsot tartalmazó üzenetét
-    try {
-      await message.delete();
-    } catch (error) {
-      console.error('Nem sikerült törölni a felhasználó üzenetét:', error);
-    }
-
     if (args.length < 3) {
       return message.reply('Kérlek, add meg a csatornát, az üzenet szövegét és a szerep párosításokat.');
     }
@@ -155,6 +148,7 @@ module.exports = {
       setTimeout(async () => {
         try {
           await confirmationMessage.delete();
+          await message.delete();
         } catch (error) {
           console.error('Nem sikerült törölni a megerősítő üzenetet:', error);
         }
