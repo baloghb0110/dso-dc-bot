@@ -1,8 +1,6 @@
 // utils/reactionRoleHandler.js
 const fs = require('fs');
 const path = require('path');
-const { EmbedBuilder } = require('discord.js');
-const config = require('../config.json');
 
 module.exports = async function handleReaction(client, reaction, user, add) {
   if (user.bot) return;
@@ -49,41 +47,12 @@ module.exports = async function handleReaction(client, reaction, user, add) {
     const guild = reaction.message.guild;
     const member = await guild.members.fetch(user.id);
 
-    let action;
     if (add) {
       await member.roles.add(roleId);
       console.log(`Hozzáadva a ${roleId} szerep ${user.tag}-nak.`);
-      action = 'Hozzáadva';
     } else {
       await member.roles.remove(roleId);
       console.log(`Eltávolítva a ${roleId} szerep ${user.tag}-tól.`);
-      action = 'Eltávolítva';
-    }
-
-    // Logolás a megadott csatornába
-    const logChannelId = config.reactionRoleLogChannelId;
-    const logChannel = guild.channels.cache.get(logChannelId);
-
-    if (logChannel && logChannel.isTextBased()) {
-      const role = guild.roles.cache.get(roleId);
-      const botAvatarURL = client.user.displayAvatarURL();
-
-      const embed = new EmbedBuilder()
-        .setColor(add ? '#00ff00' : '#ff0000')
-        .setTitle("Rang kezelés")
-        .setAuthor({ name: client.user.username, iconURL: botAvatarURL })
-        .setThumbnail(user.displayAvatarURL({ dynamic: true }))
-        .addFields(
-          { name: 'Név', value: `<@${user.id}>`, inline: true },
-          { name: 'Kezelés típus', value: action, inline: true },
-          { name: 'Rang', value: role.name, inline: true }
-        )
-        //.setDescription(`**${user.tag}** felhasználóhoz ${action} a **${role.name}** szerep.`)
-        .setTimestamp();
-
-      await logChannel.send({ embeds: [embed] });
-    } else {
-      console.error('A logolási csatorna nem található vagy nem szöveges csatorna.');
     }
   } catch (error) {
     console.error('Nem sikerült módosítani a szerepet:', error);
