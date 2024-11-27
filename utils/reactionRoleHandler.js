@@ -53,14 +53,12 @@ module.exports = async function handleReaction(client, reaction, user, add) {
     if (add) {
       await member.roles.add(roleId);
       console.log(`Hozzáadva a ${roleId} szerep ${user.tag}-nak.`);
-      action = 'hozzáadva';
+      action = 'Hozzáadva';
     } else {
       await member.roles.remove(roleId);
       console.log(`Eltávolítva a ${roleId} szerep ${user.tag}-tól.`);
-      action = 'eltávolítva';
+      action = 'Eltávolítva';
     }
-
-    console.log(user.bot)
 
     // Logolás a megadott csatornába
     const logChannelId = config.reactionRoleLogChannelId;
